@@ -215,7 +215,7 @@ export const refresh = async (req, res) => {
     { e: user.email, uid: user._id, role: user.roles },
     process.env.ACCESS_JWT_KEY,
     {
-      expiresIn: "10s",
+      expiresIn: "300s",
     }
   );
   const token = nanoid();
@@ -262,6 +262,7 @@ function isTargetDatePast(targetDateString) {
 }
 
 function getRefreshToken(g_state) {
+  if (!g_state) return undefined;
   // Tách các phần tử trong chuỗi thành các phần tử riêng biệt
   const elements = g_state.split(";");
 
@@ -281,3 +282,67 @@ function getRefreshToken(g_state) {
 
   return refresh_token;
 }
+
+export const logout = async (req, res) => {
+  try {
+    var cookie = getRefreshToken(req.headers.cookie);
+    if (!cookie) {
+      return res.status(401).json({
+        message: "Không đủ quyền truy cập",
+        code: 401,
+        success: false,
+      });
+    }
+    let tokenAuth = await tokenAuthModel.findById({ _id: cookie });
+    if (tokenAuth === null || isTargetDatePast(tokenAuth.timeCreated)) {
+      return res.status(401).json({
+        message: "Không đủ quyền truy cập",
+        code: 401,
+        success: false,
+      });
+    }
+    if (tokenAuth.nodeRoot === null) {
+      await tokenAuthModel
+        .findByIdAndDelete({ _id: cookie })
+        .then((result) => {
+          return res.clearCookie("refreshToken").status(200).json({
+            success: false,
+            code: 200,
+            message: "ok",
+          });
+        })
+        .catch((error) => {
+          return res.status(500).json({
+            message: "Server Error",
+            code: 500,
+            success: false,
+          });
+        });
+    } else {
+      await tokenAuthModel
+        .deleteMany({
+          nodeRoot: tokenAuth.nodeRoot,
+        })
+        .then((result) => {
+          return res.clearCookie("refreshToken").status(200).json({
+            success: true,
+            code: 200,
+            message: "ok",
+          });
+        })
+        .catch((err) => {
+          return res.status(500).json({
+            message: "Server Error",
+            code: 500,
+            success: false,
+          });
+        });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Server Error",
+      code: 500,
+      success: false,
+    });
+  }
+};
