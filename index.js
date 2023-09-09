@@ -18,13 +18,19 @@ const PORT = process.env.PORT || 5000;
 const URI = process.env.MONGODB_URL;
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" })); // limit from front-end data 30MB
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "http://localhost:5173"],
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: ["http://localhost:3000", "http://localhost:5173"],
+//     credentials: true,
+//   })
+// );
 
+var corsOptions = {
+  origin: "*",
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use("/auth", userRoutes);
 app.use("/test", testRoutes);
 
