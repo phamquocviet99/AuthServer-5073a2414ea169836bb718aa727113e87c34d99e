@@ -168,15 +168,15 @@ export const refresh = async (req, res) => {
   if (!cookie) {
     return res.status(401).json({
       message: "Không đủ quyền truy cập",
-      code: 401,
+      code: 4011,
       success: false,
     });
   }
   let tokenAuth = await tokenAuthModel.findById({ _id: cookie });
   if (tokenAuth === null || isTargetDatePast(tokenAuth.timeCreated)) {
-    return res.status(401).json({
+    return res.clearCookie("refreshToken").status(401).json({
       message: "Không đủ quyền truy cập",
-      code: 401,
+      code: 4012,
       success: false,
     });
   }
@@ -188,71 +188,84 @@ export const refresh = async (req, res) => {
       .then((result) => {
         console.log(result);
         return res.status(401).json({
-          message: "Không đủ quyền truy cập",
-          code: 401,
+          message: "Không đủ quyền truy cập- old-rt",
+          code: 4013,
           success: false,
         });
       })
       .catch((err) => {
-        console.log(err);
+        console.error("Loiôiỗi;");
         return res.status(401).json({
           message: "Lỗi",
-          code: 401,
+          code: 4014,
+          success: false,
+        });
+      });
+  } else {
+    console.log("toiơiới dayt");
+    const user = await userModel.findById({ _id: tokenAuth.uid });
+    tokenAuth.isActive = false;
+
+    await tokenAuth
+      .save()
+      .catch((err) => {
+        return res.status(500).json({
+          message: "Có lỗi khi cập nhật DB",
+          code: 500,
+          success: false,
+        });
+      })
+      .then((e) => {
+        console.log(e);
+      });
+
+    const accessToken = jwt.sign(
+      { e: user.email, uid: user._id, role: user.roles },
+      process.env.ACCESS_JWT_KEY,
+      {
+        expiresIn: "30s",
+      }
+    );
+    const token = nanoid();
+
+    const newRefreshToken = new tokenAuthModel({
+      _id: token,
+      uid: user._id,
+      nodeRoot:
+        tokenAuth.nodeRoot === null ? tokenAuth._id : tokenAuth.nodeRoot,
+    });
+
+    newRefreshToken
+      .save()
+      .then(() => {
+        return res
+          .cookie("refreshToken", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "None",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+          })
+          .status(200)
+          .json({
+            success: true,
+            code: 0,
+            data: {
+              id: user._id,
+              email: user.email,
+              role: user.roles,
+              token: accessToken,
+            },
+          });
+      })
+      .catch((error) => {
+        console.log("------");
+        return res.status(401).json({
+          message: error,
+          code: 4016,
           success: false,
         });
       });
   }
-  const user = await userModel.findById({ _id: tokenAuth.uid });
-  tokenAuth.isActive = false;
-  await tokenAuth.save().catch((err) => {
-    return res.status(404).json({
-      message: "Có lỗi khi cập nhật DB",
-      code: 404,
-      success: false,
-    });
-  });
-  const accessToken = jwt.sign(
-    { e: user.email, uid: user._id, role: user.roles },
-    process.env.ACCESS_JWT_KEY,
-    {
-      expiresIn: "30s",
-    }
-  );
-  const token = nanoid();
-  const newRefreshToken = new tokenAuthModel({
-    _id: token,
-    uid: user._id,
-    nodeRoot: tokenAuth.nodeRoot === null ? tokenAuth._id : tokenAuth.nodeRoot,
-  });
-  newRefreshToken
-    .save()
-    .then(() => {
-      return res
-        .cookie("refreshToken", token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: "None",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        })
-        .status(200)
-        .json({
-          success: true,
-          code: 0,
-          data: {
-            id: user._id,
-            email: user.email,
-            role: user.roles,
-            token: accessToken,
-          },
-        });
-    })
-    .catch((error) => {
-      return res.status(401).json({
-        message: error,
-        code: 401,
-        success: false,
-      });
-    });
 };
 
 function isTargetDatePast(targetDateString) {
