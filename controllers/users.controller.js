@@ -300,13 +300,13 @@ export const logout = async (req, res) => {
   try {
     var cookie = getRefreshToken(req.headers.cookie);
     if (!cookie) {
-      return res.res.clearCookie("refreshToken").status(401).json({
+      return res.clearCookie("refreshToken").status(200).json({
         success: true,
       });
     }
     let tokenAuth = await tokenAuthModel.findById({ _id: cookie });
     if (tokenAuth === null || isTargetDatePast(tokenAuth.timeCreated)) {
-      return res.res.clearCookie("refreshToken").status(200).json({
+      return res.clearCookie("refreshToken").status(200).json({
         success: true,
       });
     }
@@ -322,7 +322,7 @@ export const logout = async (req, res) => {
         })
         .catch((error) => {
           return res.status(500).json({
-            message: "Server Error",
+            message: error.message,
             code: 500,
             success: false,
           });
@@ -341,7 +341,7 @@ export const logout = async (req, res) => {
         })
         .catch((err) => {
           return res.status(500).json({
-            message: "Server Error",
+            message: err.message,
             code: 500,
             success: false,
           });
@@ -349,7 +349,7 @@ export const logout = async (req, res) => {
     }
   } catch (error) {
     return res.status(500).json({
-      message: "Server Error",
+      message: error.message,
       code: 500,
       success: false,
     });
