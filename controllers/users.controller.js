@@ -300,18 +300,14 @@ export const logout = async (req, res) => {
   try {
     var cookie = getRefreshToken(req.headers.cookie);
     if (!cookie) {
-      return res.status(401).json({
-        message: "Không đủ quyền truy cập",
-        code: 401,
-        success: false,
+      return res.res.clearCookie("refreshToken").status(401).json({
+        success: true,
       });
     }
     let tokenAuth = await tokenAuthModel.findById({ _id: cookie });
     if (tokenAuth === null || isTargetDatePast(tokenAuth.timeCreated)) {
-      return res.status(401).json({
-        message: "Không đủ quyền truy cập",
-        code: 401,
-        success: false,
+      return res.res.clearCookie("refreshToken").status(200).json({
+        success: true,
       });
     }
     if (tokenAuth.nodeRoot === null) {
