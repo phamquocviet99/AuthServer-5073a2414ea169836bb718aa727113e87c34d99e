@@ -117,7 +117,7 @@ export const login = async (req, res) => {
               { e: user[0].email, uid: user[0]._id, role: user[0].roles },
               process.env.ACCESS_JWT_KEY,
               {
-                expiresIn: "300s",
+                expiresIn: "30s",
               }
             );
             const refreshToken = nanoid();
@@ -215,7 +215,7 @@ export const refresh = async (req, res) => {
     { e: user.email, uid: user._id, role: user.roles },
     process.env.ACCESS_JWT_KEY,
     {
-      expiresIn: "300s",
+      expiresIn: "30s",
     }
   );
   const token = nanoid();
