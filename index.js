@@ -25,9 +25,10 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" })); // limit from
 //   })
 // );
 
-var corsOptions = {
-  origin: "*",
-  credentials: true,
+const corsOptions = {
+  origin: "*", // Cho phép truy cập từ tất cả các domain
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true, // Kích hoạt credentials
 };
 
 app.use(cors(corsOptions));
